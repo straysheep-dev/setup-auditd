@@ -48,7 +48,7 @@ function checkOS() {
 	# Check OS version
 	if [[ -e /etc/debian_version ]]; then
 		source /etc/os-release
-		OS="${ID}" # debian or ubuntu
+		OS="${ID}" # debian, kali, or ubuntu
 		if [[ -e /etc/debian_version ]]; then
 			if [[ ${ID} == "debian" || ${ID} == "raspbian" ]]; then
 				if [[ ${VERSION_ID} -ne 10 ]]; then
@@ -70,7 +70,7 @@ function checkOS() {
 	fi
 
 	# Temporary solution until more OS's can be tested
-	if [[ ${OS} == 'debian' ]] || [[ ${OS} == 'ubuntu' ]]; then
+	if [[ ${OS} == 'debian' ]] || [[ ${OS} == 'ubuntu' ]] || [[ ${OS} == 'kali' ]]; then
 		AUDIT_DOCS=/usr/share/doc/auditd/examples/rules/
 	elif [[ ${OS} == 'fedora' ]]; then
 		AUDIT_DOCS=/usr/share/audit/sample-rules/
