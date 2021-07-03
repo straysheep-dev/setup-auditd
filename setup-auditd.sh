@@ -280,7 +280,7 @@ function adjustRules() {
 		sed -i 's/^-/#-/g' "30-stig.rules" && \
 		sed -i 's/^x-/-/g' "30-stig.rules" && \
 		sed -i 's/key=access/key=failed-access/g' "30-stig.rules"
-		if (which apparmor_parser); then
+		if (which apparmor_parser 2>/dev/null); then
 			sed -i 's/## Things that could affect MAC policy/## Things that could affect MAC policy\n-a always,exit -F dir=\/etc\/apparmor\/ -F perm=wa -F key=MAC-policy\n-a always,exit -F dir=\/etc\/apparmor.d\/ -F perm=wa -F key=MAC-policy\n-w \/sbin\/apparmor_parser -p wxa -k MAC-policy/' "30-stig.rules"
 		fi
 	fi
