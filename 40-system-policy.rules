@@ -1,0 +1,19 @@
+## System policy rules
+
+#-w /etc/opt/chrome/ -p wa -k chrome-policy
+
+#-w /etc/chromium/ -p wa -k chromium-policy
+
+#-w /etc/chromium-browser/ -p wa -k chromium-policy
+
+#-w /usr/lib64/firefox/distribution/policies.json -p wa -k firefox-policy
+#-w /usr/lib64/firefox/defaults/pref/autoconfig.js -p wa -k firefox-policy
+#-w /usr/lib64/firefox/firefox.cfg -p wa -k firefox-policy
+
+#-w /usr/lib/firefox/distribution/policies.json -p wa -k firefox-policy
+#-w /usr/lib/firefox/defaults/pref/autoconfig.js -p wa -k firefox-policy
+#-w /usr/lib/firefox/firefox.cfg -p wa -k firefox-policy
+
+#-w /usr/lib/firefox-esr/distribution/policies.json -p wa -k firefox-policy
+#-w /usr/lib/firefox-esr/defaults/pref/autoconfig.js -p wa -k firefox-policy
+#-w /usr/lib/firefox-esr/firefox-esr.cfg -p wa -k firefox-policy
