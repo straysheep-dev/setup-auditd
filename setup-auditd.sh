@@ -68,10 +68,10 @@ function checkOS() {
 		echo "Looks like you aren't running this installer on a Debian, Ubuntu, Fedora, CentOS or Arch Linux system"
 		exit 1
 	fi
-	
+
 	# Temporary solution until more OS's can be tested
-	if [[ ${OS} == 'debian' ]]; then
-		AUDIT_DOCS=/usr/share/doc/audit/examples/rules/
+	if [[ ${OS} == 'debian' ]] || [[ ${OS} == 'ubuntu' ]]; then
+		AUDIT_DOCS=/usr/share/doc/auditd/examples/rules/
 	elif [[ ${OS} == 'fedora' ]]; then
 		AUDIT_DOCS=/usr/share/audit/sample-rules/
 	fi
@@ -290,7 +290,7 @@ function adjustRules() {
 	echo -e "\n#Log 64 bit processes (a2!=6e filters local unix socket calls)" >> "71-networking.rules" && \
 	echo -e "-a exit,always -F arch=b64 -S connect -F a2!=110 -k 64b_Outbound_Connection" >> "71-networking.rules" && \
 	echo -e "\n#Log 32 bit processes (a0=3 means only outbound sys_connect calls)" >> "71-networking.rules" && \
-	echo -e "-a exit,always -F arch=b32 -S socketcall -F a0=3 -k 32b_Outbound_Connection" >> "71-networking.rules" && \
+	echo -e "-a exit,always -F arch=b32 -S socketcall -F a0=3 -k 32b_Outbound_Connection" >> "71-networking.rules"
 }
 adjustRules
 
