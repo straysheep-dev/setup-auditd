@@ -269,11 +269,11 @@ function applySettings() {
 }
 applySettings
 
-function adjustRules() {
-	# Make any adjustments to the built in rule files from /usr/share/**rules here
-	# This will need a better solution going forward
-}
-adjustRules
+#function adjustRules() {
+#	# Make any adjustments to the built in rule files from /usr/share/**rules here
+#	# This will need a better solution going forward
+#}
+#adjustRules
 
 function setAuditing() {
 	# Putting everything together
