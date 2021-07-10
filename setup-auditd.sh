@@ -272,25 +272,6 @@ applySettings
 function adjustRules() {
 	# Make any adjustments to the built in rule files from /usr/share/**rules here
 	# This will need a better solution going forward
-
-	# Adjust default stig rules
-	if [ -e 30-stig.rules ]; then
-		sed -i 's/^-.*system-locale$/x&/g' "30-stig.rules" && \
-		sed -i 's/^-.*key=access$/x&/g' "30-stig.rules" && \
-		sed -i 's/^-/#-/g' "30-stig.rules" && \
-		sed -i 's/^x-/-/g' "30-stig.rules" && \
-		sed -i 's/key=access/key=failed-access/g' "30-stig.rules"
-		if (which apparmor_parser 2>/dev/null); then
-			sed -i 's/## Things that could affect MAC policy/## Things that could affect MAC policy\n-a always,exit -F dir=\/etc\/apparmor\/ -F perm=wa -F key=MAC-policy\n-a always,exit -F dir=\/etc\/apparmor.d\/ -F perm=wa -F key=MAC-policy\n-w \/sbin\/apparmor_parser -p wxa -k MAC-policy/' "30-stig.rules"
-		fi
-	fi
-
-	# Log all networking syscalls (noisy)
-	sed -i 's/-a/#-a/' "71-networking.rules"
-	echo -e "\n#Log 64 bit processes (a2!=6e filters local unix socket calls)" >> "71-networking.rules" && \
-	echo -e "-a exit,always -F arch=b64 -S connect -F a2!=110 -k 64b_Outbound_Connection" >> "71-networking.rules" && \
-	echo -e "\n#Log 32 bit processes (a0=3 means only outbound sys_connect calls)" >> "71-networking.rules" && \
-	echo -e "-a exit,always -F arch=b32 -S socketcall -F a0=3 -k 32b_Outbound_Connection" >> "71-networking.rules"
 }
 adjustRules
 
