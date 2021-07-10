@@ -192,11 +192,12 @@ function setSiteRules() {
 	echo "======================================================================"
 	echo -e "${BLUE}[i]${RESET}Set site-specific rules"
 	echo "The default policy templates that ship with auditd include:"
-	echo -e "${BOLD}	NISPOM | OSPP | PCI | STIG${RESET}"
-	echo "If unsure, STIG complements the MITRE rules in this setup"
+	echo -e "${BOLD}	nispom | ospp | pci | stig | none${RESET}"
+	echo "If not using custom rules, stig is a good choice"
+	echo "If custom rules will be installed, choosing none is recommended"
 	echo ""
-	until [[ $SITE_RULES =~ (nispom|ospp|pci|stig) ]]; do
-			read -rp "Enter a choice (lowercase): " -e -i stig SITE_RULES
+	until [[ $SITE_RULES =~ (nispom|ospp|pci|stig|none) ]]; do
+			read -rp "Enter a choice (lowercase): " -e -i none SITE_RULES
 	done
 }
 setSiteRules
@@ -241,6 +242,8 @@ function collectAllRules() {
 		cp "${AUDIT_DOCS}"30-ospp*.rules* .
 	elif [[ ${SITE_RULES} == 'stig' ]]; then
 		cp "${AUDIT_DOCS}"30-stig*.rules* .
+	elif [[ ${SITE_RULES} == 'none' ]]; then
+		echo "## Site specific rules placeholder file" > 30-site.rules
 	fi
 
 	# Gunzip package rules if they're archived
@@ -269,11 +272,16 @@ function applySettings() {
 }
 applySettings
 
-#function adjustRules() {
-#	# Make any adjustments to the built in rule files from /usr/share/**rules here
-#	# This will need a better solution going forward
-#}
-#adjustRules
+function adjustRules() {
+	# Make any adjustments to the built in rule files from /usr/share/**rules here
+	# This will need a better solution going forward
+	
+	# Comment out the built-in networking rules if using a local/custom rules file
+	if [[ ${SITE_RULES} == 'none' ]]; then
+		sed -i 's/-a/#-a/' "71-networking.rules"
+	fi
+}
+adjustRules
 
 function setAuditing() {
 	# Putting everything together
