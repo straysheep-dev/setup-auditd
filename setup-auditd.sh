@@ -315,7 +315,8 @@ function setAuditing() {
 	augenrules --check 2>&1
 	echo -e "${GREEN}[i]${RESET}Running augenrules --load to update rules"
 	augenrules --load 2>&1
-	echo -e "${BLUE}[^]${RESET}Any errors above this line should be fixed in the rule file they originated from"
+	echo "======================================================================"
+	echo -e "${BLUE}[^]${RESET}Any errors above this line should be fixed in their rule file"
 	echo -e "${BLUE}[^]${RESET}Review the line numbers called out in /etc/audit/audit.rules"
 	echo -e "${BLUE}[^]${RESET}Rerun this script choosing to NOT merge the current (broken) rules"
 
