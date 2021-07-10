@@ -1,6 +1,10 @@
 # setup-auditd.sh
 Setup auditd (quickly)
 
+```bash
+curl -LfO 'https://raw.githubusercontent.com/straysheep-dev/setup-auditd/main/setup-auditd.sh'
+```
+
 Many of MITRE's ATT&CK Matrix id's have been mapped out thanks to the work here:
 
 <https://github.com/bfuzzy1/auditd-attack>
