@@ -121,7 +121,7 @@ function checkCurrentRules() {
 		echo "$(ls ${AUDIT_RULES_D} | grep 40-.*.rules)"
 		echo ""
 		until [[ $MERGE_CURRENT_RULE =~ (y|n) ]]; do
-			read -rp "Merge thses rules into next rule set? [y/n]: " -e -i y MERGE_CURRENT_RULE
+			read -rp "Merge thses rules into next rule set? [y/n]: " -e -i n MERGE_CURRENT_RULE
 		done
 		if [[ $MERGE_CURRENT_RULE == "n" ]]; then
 			rm ${AUDIT_RULES_D}*
