@@ -311,9 +311,9 @@ function setAuditing() {
 
 	# Check for any errors
 	echo ""
-	echo -e "${BLUE}[i]${RESET}Running augenrules --check"
+	echo -e "${GREEN}[i]${RESET}Running augenrules --check"
 	augenrules --check 2>&1
-	echo -e "${BLUE}[i]${RESET}Running augenrules --load to update rules"
+	echo -e "${GREEN}[i]${RESET}Running augenrules --load to update rules"
 	augenrules --load 2>&1
 	echo -e "${BLUE}[^]${RESET}Any errors above this line should be fixed in the rule file they originated from"
 	echo -e "${BLUE}[^]${RESET}Review the line numbers called out in /etc/audit/audit.rules"
