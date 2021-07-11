@@ -4,8 +4,11 @@ Setup auditd (quickly)
 ```bash
 curl -LfO 'https://raw.githubusercontent.com/straysheep-dev/setup-auditd/main/setup-auditd.sh'
 ```
+To have the most surface coverage and compatability out of the box, see this project's rules file:
 
-Many of MITRE's ATT&CK Matrix id's have been mapped out thanks to the work here:
+<https://github.com/Neo23x0/auditd>
+
+Many of MITRE's ATT&CK Matrix id's have been mapped to rule keys thanks to the work here:
 
 <https://github.com/bfuzzy1/auditd-attack>
 
@@ -20,6 +23,9 @@ sudo ausearch -ts yesterday -i -k T1548.003_2 -l | grep 'proctitle='
 ```bash
 sudo ausearch -ts yesterday -i -k T1548.003_2 -l | grep 'proctitle=' | sed 's/ proctitle=/\nproctitle=/g' | grep 'proctitle=' | sort -u
 ```
+
+NOTE: Both of the above configuration files have the [10-base-config.rules](https://github.com/linux-audit/audit-userspace/blob/master/rules/10-base-config.rules) and [99-finalize.rules](https://github.com/linux-audit/audit-userspace/blob/master/rules/99-finalize.rules) included. Those lines will need commented out before using either file with this setup script.
+
 ## Rules: 
 Most of the [default rule files that ship with auditd](https://github.com/linux-audit/audit-userspace/tree/master/rules) are also enabled in this setup.
 
