@@ -276,9 +276,20 @@ function adjustRules() {
 	# Make any adjustments to the built in rule files from /usr/share/**rules here
 	# This will need a better solution going forward
 	
-	# Comment out the built-in networking rules if using a local/custom rules file
+	# Offer to comment out non-essential built in rules if using a local/custom rules file
 	if [[ ${SITE_RULES} == 'none' ]]; then
-		sed -i 's/-a/#-a/' "71-networking.rules"
+		echo "To avoid overlap with custom rules, would you like"
+		echo "comment out the non-essential built in rules?"
+		echo ""
+		until [[ $COMMENT_BUILTINS =~ (y|n) ]]; do
+			read -rp "[y/n]?: " -e -i y COMMENT_BUILTINS
+		done
+	fi
+	if [[ $COMMENT_BUILTINS == 'y' ]]; then
+		sed -i 's/^-a/#-a/' "21-no32bit.rules"
+		sed -i 's/^-a/#-a/' "42-injection.rules"
+		sed -i 's/^-a/#-a/' "43-module-load.rules"
+		sed -i 's/^-a/#-a/' "71-networking.rules"
 	fi
 }
 adjustRules
