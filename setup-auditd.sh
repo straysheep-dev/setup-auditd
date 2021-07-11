@@ -208,7 +208,7 @@ setSiteRules
 function checkLocalRules() {
 	# Check to make sure user's custom/local rules are present 
 	if [[ ${SITE_RULES} == 'none' ]]; then
-		if ! (ls | grep -q 40); then
+		if ! (ls | grep -q '40-'); then
 			echo -e "${RED}[i]${RESET}No custom rules found in CWD, quitting."
 			exit 1
 		fi
@@ -258,7 +258,7 @@ function collectAllRules() {
 	fi
 	
 	# Use default local rules placeholder if none / no custom rules are present
-	if ! [ -e "${LOCAL}" ]; then
+	if ! (ls | grep -q '40-'); then
 		cp "${AUDIT_DOCS}40-local.rules" .
 	fi
 }
