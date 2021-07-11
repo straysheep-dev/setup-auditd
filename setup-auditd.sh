@@ -35,6 +35,14 @@ function isRoot() {
 }
 isRoot
 
+function checkCwd() {
+	if  ! [ -e 'setup-auditd.sh' ]; then
+		echo "To avoid issues, execute this script from it's current working directory. Quitting."
+		exit 1
+	fi
+}
+checkCwd
+
 #function skeletonFunction() {
 #	echo ""
 #	echo "Your custom prompt goes here."
