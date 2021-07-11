@@ -115,13 +115,16 @@ makeTemp
 
 function checkCurrentRules() {
 	# Save any potentialy custom rules
-	if $(ls "${AUDIT_RULES_D}" | grep -q "40-.*.rules"); then
+	if $(ls "${AUDIT_RULES_D}" | grep -q ".rules"); then
 		echo "======================================================================"
-		echo -e "${BLUE}[i]${RESET}Possibly found custom rule file(s):"
-		echo "$(ls ${AUDIT_RULES_D} | grep 40-.*.rules)"
+		echo -e "${BLUE}[i]${RESET}Custom rule file(s) discovered:"
+		echo "$(ls ${AUDIT_RULES_D} | grep 40-.*.rules || echo 'none')"
+		echo ""
+		echo -e "${RED}[i]${RESET}NOTE: Proceeding removes all currently installed rules."
+		echo -e "${RED}[i]${RESET}Ctrl+C here to abort"
 		echo ""
 		until [[ $MERGE_CURRENT_RULE =~ (y|n) ]]; do
-			read -rp "Merge thses rules into next rule set? [y/n]: " -e -i n MERGE_CURRENT_RULE
+			read -rp "Merge current custom rule files into next rule set? [y/n]: " -e -i n MERGE_CURRENT_RULE
 		done
 		if [[ $MERGE_CURRENT_RULE == "n" ]]; then
 			rm ${AUDIT_RULES_D}*
@@ -203,13 +206,16 @@ function setSiteRules() {
 setSiteRules
 
 function checkLocalRules() {
+	# Check to make sure user's custom/local rules are present 
+	if [[ ${SITE_RULES} == 'none' ]]; then
+		if ! (ls | grep -q 40); then
+			echo -e "${RED}[i]${RESET}No custom rules found in CWD, quitting."
+			exit 1
+		fi
+	fi
 	echo "======================================================================"
-	echo -e "${BLUE}[i]${RESET}${BOLD}Ensure all custom rule files follow this naming convention:" 
-	echo -e "		 40-<name>.rules"
-	echo -e "        EXAMPLE: 40-foo.rules"
-	echo ""
-	echo -e "${BLUE}[i]${RESET}Auditd expects custom rules to be named ${BOLD}'40-*.rules'${RESET}"
-	echo -e "${BLUE}[i]${RESET}Be sure all rules are compatible before proceeding."
+	echo -e "${BLUE}[i]${RESET}Auditd expects custom rules to be named ${BOLD}'40-<name>.rules'${RESET}"
+	echo -e "${BLUE}[i]${RESET}Be sure all rules are compatible and in the CWD before proceeding."
 	echo -e "${BLUE}[i]${RESET}If needed, Ctrl+c quit here to make changes, then rerun this script."
 	echo ""
 	until [[ ${COMBINE_RULES_OK} =~ ^(OK)$ ]]; do
@@ -249,6 +255,11 @@ function collectAllRules() {
 	# Gunzip package rules if they're archived
 	if [ -e *.rules.gz ]; then
 		gunzip *.rules.gz
+	fi
+	
+	# Use default local rules placeholder if none / no custom rules are present
+	if ! [ -e "${LOCAL}" ]; then
+		cp "${AUDIT_DOCS}40-local.rules" .
 	fi
 }
 collectAllRules
