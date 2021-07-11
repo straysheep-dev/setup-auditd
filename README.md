@@ -64,4 +64,5 @@ Auditd homepage and github:
  * 30-pci-dss-v31.rules.gz
  * 30-stig.rules.gz
 
-- [x] fix issue with the ospp rules in recent versions of auditd
+- [ ] fix issue with the ospp rules in recent versions of auditd
+ * ospp rule needs to point to [this](https://github.com/linux-audit/audit-userspace/blob/master/rules/30-ospp-v42.rules) file alone
