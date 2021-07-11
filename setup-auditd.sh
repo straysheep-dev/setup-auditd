@@ -106,10 +106,11 @@ function makeTemp() {
 	export SETUPAUDITDIR=$(mktemp -d)
 	if (ls -l | grep -q "40-.*.rules"); then
 		cp 40-*.rules $SETUPAUDITDIR
-		cd $SETUPAUDITDIR
-		echo ""
-		echo -e "${BLUE}[i]${RESET}Changing working directory to $SETUPAUDITDIR"
 	fi
+	cd $SETUPAUDITDIR
+	echo ""
+	echo -e "${BLUE}[i]${RESET}Changing working directory to $SETUPAUDITDIR"
+
 }
 makeTemp
 
