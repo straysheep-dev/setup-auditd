@@ -1,10 +1,11 @@
 #!/bin/bash
 
 # Thanks & Acknowledgements
-# <https://github.com/linux-audit>		#source
-# <https://people.redhat.com/sgrubb/audit/>	#source
-# <https://github.com/bfuzzy1/auditd-attack>	#rule-mapping
-# <https://attack.mitre.org/>			#attack-framework
+# https://github.com/linux-audit		#source
+# https://people.redhat.com/sgrubb/audit/	#source
+# https://github.com/bfuzzy1/auditd-attack	#rule-mapping
+# https://github.com/Neo23x0/auditd		#configuration
+# https://attack.mitre.org/			#attack-framework
 
 # Vars
 
