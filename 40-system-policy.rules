@@ -1,7 +1,7 @@
 ## System policy rules
-### This is an example set of rules that point to chrome/chromium and firefox's policy files, and logs an 
-### alert for syscalls that are used to (w)rite or (m)odify attributes of the given directorie(s)/file(s).
-### To enable them, uncomment whichever rules apply to your system.
+### This is an example set of rules that point to chrome/chromium and firefox's policy files.
+### It logs every instance a process attempts to write to the directories/files, or modify their attributes.
+### To enable them, uncomment the lines of the policy files you have on your system.
 
 #-w /etc/opt/chrome/ -p wa -k chrome-policy
 
