@@ -127,15 +127,14 @@ function checkCurrentRules() {
 	# Check for any currently installed rules
 	if $(ls "${AUDIT_RULES_D}" | grep -q ".rules"); then
 		echo "======================================================================"
-		echo -e "${RED}[-]${RESET}Current rule file(s) to remove:"
+		echo -e "${RED}[-]${RESET}Currently installed auditd rule file(s) to remove:"
 		echo "$(ls ${AUDIT_RULES_D} | grep '.rules' || echo 'none')"
 		echo ""
-		echo -e "${GREEN}[+]${RESET}Custom rule file(s) to be installed:"
+		echo -e "${GREEN}[+]${RESET}Custom auditd rule file(s) to be installed:"
 		echo "$(ls ${SETUPAUDITDIR} | grep '.rules' || echo 'none')"
 		echo ""
-		echo -e "${RED}[i]${RESET}NOTE: Proceeding erases all currently installed rules."
-		echo -e "${RED}[i]${RESET}Copy any custom rules to CWD to reinstall them."
-		echo -e "${RED}[i]${RESET}Ctrl+C here to abort"
+		echo -e "${BLUE}[i]${RESET}Proceeding erases all currently installed rules."
+		echo -e "${BLUE}[i]${RESET}Copy any custom rules to CWD to reinstall them."
 		echo ""
 		until [[ $CONTINUE_SETUP =~ ^(y|n)$ ]]; do
 			read -rp "Continue with setup? [y/n]: " CONTINUE_SETUP
@@ -215,20 +214,21 @@ function setSiteRules() {
 setSiteRules
 
 function checkLocalRules() {
-	# Check to make sure user's custom/local rules are present 
+	# Check to make sure user's custom/local rules are present if no site rules chosen
 	if [[ ${SITE_RULES} == 'none' ]]; then
 		if ! (ls | grep -q '40-'); then
-			echo -e "${RED}[i]${RESET}No custom rules found in CWD, quitting."
+			echo -e "${RED}[i]${RESET}No site rules were chosen and no custom rules are present. Quitting."
 			exit 1
 		fi
 	fi
 	echo "======================================================================"
 	echo -e "${BLUE}[i]${RESET}Auditd expects custom rules to be named ${BOLD}'40-<name>.rules'${RESET}"
-	echo -e "${BLUE}[i]${RESET}Be sure all rules are compatible and in the CWD before proceeding."
-	echo -e "${BLUE}[i]${RESET}If needed, Ctrl+c quit here to make changes, then rerun this script."
+	echo -e "${BLUE}[i]${RESET}Be sure all rules are compatible and present in the directory this script was started in."
+	echo -e "${BLUE}[i]${RESET}Because this script copies all components to a temporary directory, to"
+	echo -e "${BLUE}[i]${RESET}make changes to any custom rules, Ctrl+c quit here, then rerun this script."
 	echo ""
-	until [[ ${COMBINE_RULES_OK} =~ ^(OK)$ ]]; do
-		read -rp "Type 'OK' then press enter to continue > " COMBINE_RULES_OK
+	until [[ ${RULES_OK} =~ ^(OK)$ ]]; do
+		read -rp "Type 'OK' then press enter to continue > " RULES_OK
 	done
 	echo "======================================================================"
 }
@@ -282,7 +282,7 @@ function applySettings() {
 		grep -q -x "num_logs = ${NUM_LOGS}" "${AUDITD_CONF}" || (sed -i 's/^num_logs = .*$/num_logs = '"${NUM_LOGS}"'/' "${AUDITD_CONF}")
 		grep -q -x "max_log_file = ${LOG_SIZE}" "${AUDITD_CONF}" || (sed -i 's/^max_log_file = .*$/max_log_file = '"${LOG_SIZE}"'/' "${AUDITD_CONF}")
 	else
-		echo -e "${RED}[!]Missing auditd.conf file.${RESET}"
+		echo -e "${RED}"'[!]'"Missing auditd.conf file.${RESET}"
 		exit 1
 	fi
 	# Next, set the buffer size in 10-base-config.rules, if this file is missing we'll see below
@@ -301,7 +301,7 @@ function adjustRules() {
 		echo "To avoid overlap with custom rules, would you like"
 		echo "comment out the non-essential built in rules?"
 		echo ""
-		until [[ $COMMENT_BUILTINS =~ (y|n) ]]; do
+		until [[ $COMMENT_BUILTINS =~ ^(y|n)$ ]]; do
 			read -rp "[y/n]?: " -e -i y COMMENT_BUILTINS
 		done
 	fi
@@ -340,7 +340,7 @@ function setAuditing() {
 		if [[ -e "${RULE}" ]]; then
 			chmod 440 "${RULE}" && cp "${RULE}" -t "${AUDIT_RULES_D}" 2>/dev/null && rm "${RULE}" && echo -e "${GREEN}[+]${RESET}${BOLD}Installing ${RULE}${RESET}"
 		else
-			echo -e "${RED}[!]Missing ${RULE}, and cannot locate rule file to install.${RESET}"
+			echo -e "${RED}"'[!]'"Missing ${RULE}, and cannot locate rule file to install.${RESET}"
 		fi
 	done
 
