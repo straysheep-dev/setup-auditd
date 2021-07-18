@@ -134,7 +134,8 @@ function checkCurrentRules() {
 		echo "$(ls ${SETUPAUDITDIR} | grep '.rules' || echo 'none')"
 		echo ""
 		echo -e "${BLUE}[i]${RESET}Proceeding erases all currently installed rules."
-		echo -e "${BLUE}[i]${RESET}Copy any custom rules to CWD to reinstall them."
+		echo -e "${BLUE}[i]${RESET}To keep any custom rules currently installed, copy them now to"
+		echo "   the directory this script was started from before continuing."
 		echo ""
 		until [[ $CONTINUE_SETUP =~ ^(y|n)$ ]]; do
 			read -rp "Continue with setup? [y/n]: " CONTINUE_SETUP
