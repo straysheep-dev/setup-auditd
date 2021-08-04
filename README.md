@@ -4,6 +4,7 @@ Setup auditd (quickly)
 ```bash
 cd $(mktemp -d)
 curl -LfO 'https://raw.githubusercontent.com/straysheep-dev/setup-auditd/main/setup-auditd.sh'
+# optionally curl or add custom rule file(s) not part of the built-in samples to the cwd before executing
 chmod +x setup-auditd.sh
 sudo ./setup-auditd.sh
 ```
@@ -56,6 +57,46 @@ sudo aureport -ts week-ago -i -l --success
 ```bash
 sudo aureport -ts today -k --summary
 ```
+### Filtering the Noise
+
+Workstations and busy servers will log some keys into the tens of thousands. While noisy, the additional context may prove useful once you're identified what you're looking for. This amount is also not too difficult to parse down so long as a particulary key or entry is not overwhealming, and ultimately **overwriting** the limit of your logging. Always ensure rules are tested so you know how long to expect logs to be available before being overwritten. Also try to identify keys or entries that could be used by an adversary to zero out your logs with useless information.
+
+Goal: Parse down a key with an everage of 10,000+ entries to a list of readable unique results
+
+T1548.001_Setuid_and_Setgid is a great example, as it's noisy but captures incredibly useful command information
+
+* 1.) list all events of the `T1548.001_Setuid_and_Setgid` key and specifically print the `proctitle=` value to terminal
+```bash
+sudo ausearch -ts week-ago -i -l -k T1548.001_Setuid_and_Setgid | grep 'proctitle='
+```
+
+* 2.) remove everything before and up to the `proctitle=` key/value of every single result
+```bash
+sudo ausearch -ts week-ago -i -l -k T1548.001_Setuid_and_Setgid | grep 'proctitle=' | sed 's/^.*: proctitle=/proctitle=/g'
+```
+
+* 3.) we do #2 to prepare for this, sorting all results to uniques only (we used sed to remove date and time for instance, which would make this impossible)
+```bash
+sudo ausearch -ts week-ago -i -l -k T1548.001_Setuid_and_Setgid | grep 'proctitle=' | sed 's/^.*: proctitle=/proctitle=/g' | sort -u
+```
+
+* 4.1) review & manually filter out known good but noisy entries
+```bash
+sudo ausearch -ts week-ago -i -l -k T1548.001_Setuid_and_Setgid | grep 'proctitle=' | sed 's/^.*: proctitle=/proctitle=/g' | sort -u | grep -v "<known-good-entry>"
+```
+From here continue appending to the command to filter known good entries as you discover them:
+```bash
+... | grep -v '<good-entry-2>'| grep -v '<good-entry-3>'| grep -v '<good-entry-4>' ...
+```
+Save this information for next time to already have good filters for your environment.
+
+AND / OR
+
+* 4.2) review & manually filter for a specific threat, for example see all entries where the curl binary was invoked
+```bash
+sudo ausearch -ts week-ago -i -l -k T1548.001_Setuid_and_Setgid | grep 'proctitle=' | sed 's/^.*: proctitle=/proctitle=/g' | sort -u | grep 'curl'
+```
+You can do this not only for `proctitle=` but anything else in an auditd event. `name=` `key=` `comm=` and a date/time range are all good starting points.
 
 ## Resources:
 For complete and downloadable spreadsheets of the matrix id's, see 'ATT&CK in Excel' click 'Learn more'
