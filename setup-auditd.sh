@@ -143,11 +143,11 @@ function checkCurrentRules() {
 		if [[ $CONTINUE_SETUP == "n" ]]; then
 			exit 1
 		elif [[ $CONTINUE_SETUP == "y" ]]; then
-			rm ${AUDIT_RULES_D}* 2>/dev/null
+			rm "${AUDIT_RULES_D}"* 2>/dev/null
 		fi
 	# Reset all other rules
 	else
-		rm ${AUDIT_RULES_D}* 2>/dev/null
+		rm "${AUDIT_RULES_D}"* 2>/dev/null
 	fi
 }
 checkCurrentRules
