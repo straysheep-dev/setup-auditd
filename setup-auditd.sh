@@ -36,8 +36,10 @@ function isRoot() {
 isRoot
 
 function checkCwd() {
+	# Needs a better solution
 	if  ! [ -e 'setup-auditd.sh' ]; then
 		echo "To avoid issues, execute this script from it's current working directory. Quitting."
+		echo "If you renamed this script, change this function or rename it 'setup-auditd.sh'"
 		exit 1
 	fi
 }
@@ -47,7 +49,7 @@ checkCwd
 #	echo ""
 #	echo "Your custom prompt goes here."
 #	echo ""
-#	until [[ $CUSTOM_VAR =~ (OPTION1|OPTION2) ]]; do
+#	until [[ $CUSTOM_VAR =~ ^(OPTION1|OPTION2)$ ]]; do
 #		read -rp "Custom question: " -e -i OPTION1 CUSTOM_VAR
 #	done
 #}
@@ -88,13 +90,13 @@ function checkOS() {
 checkOS
 
 function checkPackages() {
-	if ! (which auditd); then
+	if ! (command -v auditd); then
 		echo -e "${BLUE}[>]${RESET}Installing auditd package..."
 		sudo apt update
 		sudo apt install -y auditd
 		#auditd.service is enabled and starts by default
 		sleep 2
-		if ! (which auditd); then
+		if ! (command -v auditd); then
 			exit 1
 		fi
 		echo -e "${BLUE}[✓]${RESET}Done."
@@ -112,7 +114,8 @@ function checkServices() {
 checkServices
 
 function makeTemp() {
-	export SETUPAUDITDIR=$(mktemp -d)
+	SETUPAUDITDIR=$(mktemp -d)
+	export SETUPAUDITDIR
 	if (ls -l | grep -q "40-.*.rules"); then
 		cp 40-*.rules $SETUPAUDITDIR
 	fi
@@ -132,10 +135,6 @@ function checkCurrentRules() {
 		echo ""
 		echo -e "${GREEN}[+]${RESET}Custom auditd rule file(s) to be installed:"
 		echo "$(ls ${SETUPAUDITDIR} | grep '.rules' || echo 'none')"
-		echo ""
-		echo -e "${BLUE}[i]${RESET}Proceeding erases all currently installed rules."
-		echo -e "${BLUE}[i]${RESET}To keep any custom rules currently installed, copy them now to"
-		echo "   the directory this script was started from before continuing."
 		echo ""
 		until [[ $CONTINUE_SETUP =~ ^(y|n)$ ]]; do
 			read -rp "Continue with setup? [y/n]: " CONTINUE_SETUP
@@ -167,7 +166,7 @@ setLogFormat
 function setLogSize() {
 	echo "======================================================================"
 	echo -e "${BLUE}[i]${RESET}Set the ${BOLD}file size${RESET} of each log"
-	echo -e "${BLUE}[i]${RESET}The default size works well in most cases"
+	echo -e "${BLUE}[i]${RESET}Recommended setting: ${BOLD}8${RESET} (8MB)"
 	echo -e "${BLUE}[i]${RESET}Default setting: ${BOLD}8${RESET} (8MB)"
 	echo ""
 	until [[ $LOG_SIZE =~ ^[0-9]+$ ]] && [ "$LOG_SIZE" -ge 1 ] && [ "$LOG_SIZE" -le 50 ]; do
@@ -179,7 +178,8 @@ setLogSize
 function setLogNumber() {
 	echo "======================================================================"
 	echo -e "${BLUE}[i]${RESET}Set the ${BOLD}number of log files${RESET} to maintain locally"
-	echo -e "${BLUE}[i]${RESET}Use more if you aren't shipping to a central logging server."
+	echo -e "${BLUE}[i]${RESET}Recommended setting if shipping logs: ${BOLD}6+${RESET} (6MB)"
+	echo -e "${BLUE}[i]${RESET}Recommended setting if hosting logs: ${BOLD}50+${RESET} 50MB)"
 	echo -e "${BLUE}[i]${RESET}Default setting: ${BOLD}8${RESET}"
 	echo ""
 	until [[ $NUM_LOGS =~ ^[0-9]+$ ]] && [ "$NUM_LOGS" -ge 1 ] && [ "$NUM_LOGS" -le 65535 ]; do
@@ -203,7 +203,6 @@ setBuffer
 function setSiteRules() {
 	echo "======================================================================"
 	echo -e "${BLUE}[i]${RESET}Set site-specific rules"
-	echo "The default policy templates that ship with auditd include:"
 	echo -e "${BOLD}	nispom | ospp | pci | stig | none${RESET}"
 	echo -e "If not using custom rules, ${BLUE}stig${RESET} is a good choice"
 	echo -e "If custom rules will be installed, choosing ${BLUE}none${RESET} is recommended"
@@ -218,22 +217,18 @@ function checkLocalRules() {
 	# Check to make sure user's custom/local rules are present if no site rules chosen
 	if [[ ${SITE_RULES} == 'none' ]]; then
 		if ! (ls | grep -q '40-'); then
-			echo -e "${RED}[i]${RESET}No site rules were chosen and no custom rules are present. Quitting."
-			exit 1
+			echo ""
+			echo -e "${RED}[i]${RESET}No site rules were chosen and no custom rules are present"
+			echo -e "${RED}[i]${RESET}Really proceed?"
+			
+			until [[ $WARNING_CHOICE =~ ^(y|n)$ ]]; do
+			read -rp "Continue with setup? [y/n]: " WARNING_CHOICE
+			done
+			if [[ $WARNING_CHOICE == "n" ]]; then
+				exit 1
+			fi
 		fi
 	fi
-	echo "======================================================================"
-	echo -e "${BLUE}[i]${RESET}Auditd expects custom rules to be named ${BOLD}'40-<name>.rules'${RESET}"
-	echo -e "${BLUE}[i]${RESET}Be sure all custom rules are compatible with each other"
-	echo -e "${BLUE}[i]${RESET}Be sure all custom rules are in the same directory as this script"
-	echo -e "${BLUE}[i]${RESET}All components are copied to a temporary directory."
-	echo -e "${BLUE}[i]${RESET}To make any changes to your custom rules, Ctrl+c quit here,"
-	echo -e "${BLUE}[i]${RESET}then rerun this script."
-	echo ""
-	until [[ ${RULES_OK} =~ ^(OK)$ ]]; do
-		read -rp "Type 'OK' then press enter to continue > " RULES_OK
-	done
-	echo "======================================================================"
 }
 checkLocalRules
 
@@ -358,11 +353,8 @@ function setAuditing() {
 	echo -e "${GREEN}[i]${RESET}Running augenrules --load to update rules"
 	augenrules --load 2>&1
 	echo "======================================================================"
-	echo -e "${BLUE}[^]${RESET}Any errors above this line should be fixed in their rule file"
 	echo -e "${BLUE}[^]${RESET}Review the line numbers called out in /etc/audit/audit.rules"
-	echo -e "${BLUE}[^]${RESET}When tuning rules, edit the files in /etc/audit/rules.d/*"
-	echo -e "${BLUE}[^]${RESET}Run augenrules --check && augenrules --load, then reboot to load"
-	echo -e "${BLUE}[^]${RESET}edited rules after making changes"
+	echo -e "${BLUE}[^]${RESET}Tune installed rules directly in /etc/audit/rules.d/*"
 
 	echo ""
 	echo -e "${BLUE}[>]${RESET}${BOLD}Log format = ${LOG_FORMAT}${RESET}"
