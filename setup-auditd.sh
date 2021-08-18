@@ -178,8 +178,8 @@ setLogSize
 function setLogNumber() {
 	echo "======================================================================"
 	echo -e "${BLUE}[i]${RESET}Set the ${BOLD}number of log files${RESET} to maintain locally"
-	echo -e "${BLUE}[i]${RESET}Recommended setting if shipping logs: ${BOLD}6+${RESET} (6MB)"
-	echo -e "${BLUE}[i]${RESET}Recommended setting if hosting logs: ${BOLD}50+${RESET} 50MB)"
+	echo -e "${BLUE}[i]${RESET}Recommended setting if shipping logs: ${BOLD}6+${RESET}"
+	echo -e "${BLUE}[i]${RESET}Recommended setting if hosting logs: ${BOLD}50+${RESET}"
 	echo -e "${BLUE}[i]${RESET}Default setting: ${BOLD}8${RESET}"
 	echo ""
 	until [[ $NUM_LOGS =~ ^[0-9]+$ ]] && [ "$NUM_LOGS" -ge 1 ] && [ "$NUM_LOGS" -le 65535 ]; do
