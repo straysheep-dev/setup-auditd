@@ -117,9 +117,9 @@ function makeTemp() {
 	SETUPAUDITDIR=$(mktemp -d)
 	export SETUPAUDITDIR
 	if (ls -l | grep -q "40-.*.rules"); then
-		cp 40-*.rules $SETUPAUDITDIR
+		cp 40-*.rules "$SETUPAUDITDIR"
 	fi
-	cd $SETUPAUDITDIR
+	cd "$SETUPAUDITDIR"
 	echo ""
 	echo -e "${BLUE}[i]${RESET}Changing working directory to $SETUPAUDITDIR"
 
@@ -265,7 +265,7 @@ function collectAllRules() {
 	fi
 
 	# Use default local rules placeholder if none / no custom rules are present
-	if ! (ls | grep -q '40-'); then
+	if ! (ls | grep -q '40-*.rules'); then
 		cp "${AUDIT_DOCS}40-local.rules" .
 	fi
 }
