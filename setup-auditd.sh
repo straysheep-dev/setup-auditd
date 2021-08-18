@@ -353,7 +353,7 @@ function setAuditing() {
 	echo -e "${GREEN}[i]${RESET}Running augenrules --load to update rules"
 	augenrules --load 2>&1
 	echo "======================================================================"
-	echo -e "${BLUE}[^]${RESET}Review the line numbers called out in /etc/audit/audit.rules"
+	echo -e "${BLUE}[^]${RESET}Review any line numbers called out in /etc/audit/audit.rules"
 	echo -e "${BLUE}[^]${RESET}Tune installed rules directly in /etc/audit/rules.d/*"
 
 	echo ""
