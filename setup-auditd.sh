@@ -265,7 +265,7 @@ function collectAllRules() {
 	fi
 
 	# Use default local rules placeholder if none / no custom rules are present
-	if ! (ls | grep -q '40-*.rules'); then
+	if ! (ls | grep -q '40-'); then
 		cp "${AUDIT_DOCS}40-local.rules" .
 	fi
 }
