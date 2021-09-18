@@ -41,22 +41,23 @@ Rules are still interpretted and work fine if you don't follow this method, but 
 
 ## Query Examples:
 
-* Show all commands run with sudo (and their command line switches) since yesterday, in order of time:
+* List each rule key and the number of log entries per rule key for the current day:
 ```bash
-sudo ausearch -ts yesterday -i -k T1548.003_Sudo_and_Sudo_Caching -l | grep 'proctitle='
-```
-* Same as above, but printing a sorted list of all unique commands (with command line switches, no duplicates, and not by time):
-```bash
-sudo ausearch -ts yesterday -i -k T1548.003_Sudo_and_Sudo_Caching -l | grep 'proctitle=' | sed 's/ proctitle=/\nproctitle=/g' | grep 'proctitle=' | sort -u
+sudo aureport -ts today -k --summary
 ```
 * Print a list of all successful logins by date/time, user, and source ip in the last week:
 ```bash
 sudo aureport -ts week-ago -i -l --success
 ```
-* List each rule key and the number of log entries per rule key for the current day:
+* Show all commands run with elevated privileges (and their command line switches) since yesterday, in order of time:
 ```bash
-sudo aureport -ts today -k --summary
+sudo ausearch -ts yesterday -i -l -k T1548.003_Sudo_and_Sudo_Caching | grep 'proctitle='
 ```
+* Same as above, but printing a list of all unique commands sorted by number of times each command was executed :
+```bash
+sudo ausearch -ts yesterday -i -l -k T1548.003_Sudo_and_Sudo_Caching | grep 'proctitle=' | sed 's/^.*proctitle=/proctitle=/g' | sort | uniq -c | sort -nr
+```
+
 ### Filtering the Noise
 
 Workstations and busy servers will log some keys into the tens of thousands. While noisy, the additional context may prove useful once you're identified what you're looking for. This amount is also not too difficult to parse down so long as a particulary key or entry is not overwhealming, and ultimately **overwriting** the limit of your logging. Always ensure rules are tested so you know how long to expect logs to be available before being overwritten. Also try to identify keys or entries that could be used by an adversary to zero out your logs with useless information.
