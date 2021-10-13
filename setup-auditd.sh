@@ -18,7 +18,7 @@ RESET="\033[00m"       # Normal
 
 AUDIT_DOCS=0
 AUDITD_CONF=/etc/audit/auditd.conf
-AUDIT_RULES_D=/etc/audit/rules.d/
+AUDIT_RULES_D=/etc/audit/rules.d
 NUM_LOGS=0
 LOG_SIZE=0
 LOG_FORMAT=0
@@ -37,9 +37,10 @@ isRoot
 
 function checkCwd() {
 	# Needs a better solution
-	if  ! [ -e 'setup-auditd.sh' ]; then
-		echo "To avoid issues, execute this script from it's current working directory. Quitting."
+	if  ! [ -e "$(pwd)"/setup-auditd.sh ]; then
+		echo "To avoid issues, execute this script from it's current working directory alongside any custom rule files."
 		echo "If you renamed this script, change this function or rename it 'setup-auditd.sh'"
+		echo "Quitting."
 		exit 1
 	fi
 }
@@ -82,14 +83,15 @@ function checkOS() {
 
 	# Temporary solution until more OS's can be tested
 	if [[ ${OS} == 'debian' ]] || [[ ${OS} == 'ubuntu' ]] || [[ ${OS} == 'kali' ]]; then
-		AUDIT_DOCS=/usr/share/doc/auditd/examples/rules/
+		AUDIT_DOCS=/usr/share/doc/auditd/examples/rules
 	elif [[ ${OS} == 'fedora' ]]; then
-		AUDIT_DOCS=/usr/share/audit/sample-rules/
+		AUDIT_DOCS=/usr/share/audit/sample-rules
 	fi
 }
 checkOS
 
 function checkPackages() {
+	echo -e "${BLUE}[i]${RESET}Checking for auditd binary..."
 	if ! (command -v auditd); then
 		echo -e "${BLUE}[>]${RESET}Installing auditd package..."
 		sudo apt update
@@ -114,12 +116,21 @@ function checkServices() {
 checkServices
 
 function makeTemp() {
-	SETUPAUDITDIR=$(mktemp -d)
-	export SETUPAUDITDIR
-	if (ls -l | grep -q "40-.*.rules"); then
-		cp 40-*.rules "$SETUPAUDITDIR"
+	if [ -d /tmp/auditd/ ]; then
+		rm -rf /tmp/auditd
 	fi
-	cd "$SETUPAUDITDIR"
+
+	mkdir /tmp/auditd
+
+	SETUPAUDITDIR=/tmp/auditd
+	export SETUPAUDITDIR
+
+	for new_rules in "$(pwd)"/40-*.rules; do
+		if [ -f "$new_rules" ]; then
+			cp "$new_rules" "$SETUPAUDITDIR";
+		fi
+	done
+	cd "$SETUPAUDITDIR" || (echo "Failed changing into auditd directory. Quitting." && exit)
 	echo ""
 	echo -e "${BLUE}[i]${RESET}Changing working directory to $SETUPAUDITDIR"
 
@@ -128,26 +139,36 @@ makeTemp
 
 function checkCurrentRules() {
 	# Check for any currently installed rules
-	if $(ls "${AUDIT_RULES_D}" | grep -q ".rules"); then
-		echo "======================================================================"
-		echo -e "${RED}[-]${RESET}Currently installed auditd rule file(s) to remove:"
-		echo "$(ls ${AUDIT_RULES_D} | grep '.rules' || echo 'none')"
-		echo ""
-		echo -e "${GREEN}[+]${RESET}Custom auditd rule file(s) to be installed:"
-		echo "$(ls ${SETUPAUDITDIR} | grep '.rules' || echo 'none')"
-		echo ""
-		until [[ $CONTINUE_SETUP =~ ^(y|n)$ ]]; do
-			read -rp "Continue with setup? [y/n]: " CONTINUE_SETUP
-		done
-		if [[ $CONTINUE_SETUP == "n" ]]; then
-			exit 1
-		elif [[ $CONTINUE_SETUP == "y" ]]; then
-			rm "${AUDIT_RULES_D}"* 2>/dev/null
+	# Reference: https://github.com/koalaman/shellcheck/wiki/SC2144 "-e doesn't work with globs, use a for loop"
+	echo "======================================================================"
+	echo -e "${RED}[-]${RESET}Currently installed auditd rule file(s) to remove:"
+	for current_rules in /etc/audit/rules.d/*.rules; do
+		if [ -f "$current_rules" ]; then
+			echo "$current_rules";
+		else
+			echo "None"
 		fi
-	# Reset all other rules
-	else
-		rm "${AUDIT_RULES_D}"* 2>/dev/null
+	done
+	echo ""
+	echo -e "${GREEN}[+]${RESET}Custom auditd rule file(s) to be installed:"
+	for new_rules in "$SETUPAUDITDIR"/*.rules; do
+		if [ -f "$new_rules" ]; then
+			echo "$new_rules";
+		else
+			echo "None"
+		fi
+	done
+	echo ""
+	until [[ $CONTINUE_SETUP =~ ^(y|n)$ ]]; do
+		read -rp "Continue with setup? [y/n]: " CONTINUE_SETUP
+	done
+	if [[ $CONTINUE_SETUP == "n" ]]; then
+		exit 1
+	elif [[ $CONTINUE_SETUP == "y" ]]; then
+		rm "$AUDIT_RULES_D"/* 2>/dev/null
 	fi
+	# Reset all other rules
+	rm "$AUDIT_RULES_D"/* 2>/dev/null
 }
 checkCurrentRules
 
@@ -216,69 +237,73 @@ setSiteRules
 function checkLocalRules() {
 	# Check to make sure user's custom/local rules are present if no site rules chosen
 	if [[ ${SITE_RULES} == 'none' ]]; then
-		if ! (ls | grep -q '40-'); then
-			echo ""
-			echo -e "${RED}[i]${RESET}No site rules were chosen and no custom rules are present"
-			echo -e "${RED}[i]${RESET}Really proceed?"
-			
-			until [[ $WARNING_CHOICE =~ ^(y|n)$ ]]; do
-			read -rp "Continue with setup? [y/n]: " WARNING_CHOICE
-			done
-			if [[ $WARNING_CHOICE == "n" ]]; then
-				exit 1
+		for rule in "$SETUPAUDITDIR"/40-*.rules; do
+			if ! [ -f "$rule" ]; then
+				echo ""
+				echo -e "${RED}[i]${RESET}No site rules were chosen and no custom rules are present"
+				echo -e "${RED}[i]${RESET}Really proceed?"
+				
+				until [[ $WARNING_CHOICE =~ ^(y|n)$ ]]; do
+				read -rp "Continue with setup? [y/n]: " WARNING_CHOICE
+				done
+				if [[ $WARNING_CHOICE == "n" ]]; then
+					exit 1
+				fi
 			fi
-		fi
+		done
 	fi
 }
 checkLocalRules
 
 function collectAllRules() {
-	# Gather all rule files to cwd
-	BASE="${AUDIT_DOCS}10-base-config.rules"
-	LOGINUID="${AUDIT_DOCS}11-loginuid.rules"
-	NO32BIT="${AUDIT_DOCS}21-no32bit.rules"
-	LOCAL="$(pwd)/40-*.rules"
-	CONTAINER="${AUDIT_DOCS}41-containers.rules"
-	INJECT="${AUDIT_DOCS}42-injection.rules"
-	KMOD="${AUDIT_DOCS}43-module-load.rules"
-	NET="${AUDIT_DOCS}71-networking.rules"
-	FIN="${AUDIT_DOCS}99-finalize.rules"
+	# Gather all rule files to cwd, do this to apply modifications to copies rather than those shipped with auditd before installing them.
+	cp "$AUDIT_DOCS"/10-base-config.rules .
+	cp "$AUDIT_DOCS"/11-loginuid.rules .
+	cp "$AUDIT_DOCS"/21-no32bit.rules .
+	# Use default local rules placeholder if none / no custom rules are present
+	for rule in "$SETUPAUDITDIR"/40-*.rules; do
+		if ! [ -f "$rule" ]; then
+			cp "$AUDIT_DOCS"/40-local.rules .
+		fi
+	done
+	cp "$AUDIT_DOCS"/41-containers.rules .
+	cp "$AUDIT_DOCS"/42-injection.rules .
+	cp "$AUDIT_DOCS"/43-module-load.rules .
+	cp "$AUDIT_DOCS"/71-networking.rules .
+	cp "$AUDIT_DOCS"/99-finalize.rules .
 
-	cp "${BASE}" "${LOGINUID}" "${NO32BIT}" "${CONTAINER}" "${INJECT}" "${KMOD}" "${NET}" "${FIN}" .
-
-	# Site rules need gathered separately, too many ospp rules for one variable?
+	# Site rules
 	if [[ ${SITE_RULES} == 'nispom' ]]; then
-		cp "${AUDIT_DOCS}"30-nispom*.rules* .
+		cp "$AUDIT_DOCS"/30-nispom*.rules* .
 	elif [[ ${SITE_RULES} == 'pci' ]]; then
-		cp "${AUDIT_DOCS}"30-pci*.rules* .
+		cp "$AUDIT_DOCS"/30-pci*.rules* .
 	elif [[ ${SITE_RULES} == 'ospp' ]]; then
-		cp "${AUDIT_DOCS}"$(ls "${AUDIT_DOCS}" | grep "30-ospp-v[0-9][0-9].rules*") .
+		# Needs to be done this way to copy the single rule file with all ospp rules, vs the same
+		# rules across separate ospp rule files that come with auditd.
+		find "$AUDIT_DOCS"/ -type f -name "30-ospp-v[0-9][0-9].rules*" -print0 | xargs -0 cp -t .
 	elif [[ ${SITE_RULES} == 'stig' ]]; then
-		cp "${AUDIT_DOCS}"30-stig*.rules* .
+		cp "$AUDIT_DOCS"/30-stig*.rules* .
 	elif [[ ${SITE_RULES} == 'none' ]]; then
 		echo "## Site specific rules placeholder file" > 30-site.rules
 	fi
 
-	# Gunzip package rules if they're archived
-	if [ -e *.rules.gz ]; then
-		gunzip *.rules.gz
-	fi
-
-	# Use default local rules placeholder if none / no custom rules are present
-	if ! (ls | grep -q '40-'); then
-		cp "${AUDIT_DOCS}40-local.rules" .
-	fi
+	# Gunzip rule files if they're archived
+	for rule in "$SETUPAUDITDIR"/*.gz; do
+		if [ -f "$rule" ]; then
+			gunzip "$rule"
+		fi
+	done
 }
 collectAllRules
 
 function applySettings() {
 	# Apply the settings chosen by user during setup
 	# /etc/audit/auditd.conf changes:
-	if [ -e "${AUDITD_CONF}" ]; then
+	if [ -e "$AUDITD_CONF" ]; then
 		echo ""
-		grep -q -x "log_format = ${LOG_FORMAT}" "${AUDITD_CONF}" || (sed -i 's/^log_format = .*$/log_format = '"${LOG_FORMAT}"'/' "${AUDITD_CONF}")
-		grep -q -x "num_logs = ${NUM_LOGS}" "${AUDITD_CONF}" || (sed -i 's/^num_logs = .*$/num_logs = '"${NUM_LOGS}"'/' "${AUDITD_CONF}")
-		grep -q -x "max_log_file = ${LOG_SIZE}" "${AUDITD_CONF}" || (sed -i 's/^max_log_file = .*$/max_log_file = '"${LOG_SIZE}"'/' "${AUDITD_CONF}")
+		grep -q -x "log_format = $LOG_FORMAT" "$AUDITD_CONF" || (sed -i 's/^log_format = .*$/log_format = '"$LOG_FORMAT"'/' "$AUDITD_CONF")
+		grep -q -x "num_logs = $NUM_LOGS" "$AUDITD_CONF" || (sed -i 's/^num_logs = .*$/num_logs = '"$NUM_LOGS"'/' "$AUDITD_CONF")
+		grep -q -x "max_log_file = $LOG_SIZE" "$AUDITD_CONF" || (sed -i 's/^max_log_file = .*$/max_log_file = '"$LOG_SIZE"'/' "$AUDITD_CONF")
 	else
 		echo -e "${RED}"'[!]'"Missing auditd.conf file.${RESET}"
 		exit 1
@@ -304,10 +329,10 @@ function adjustRules() {
 		done
 	fi
 	if [[ $COMMENT_BUILTINS == 'y' ]]; then
-		sed -i 's/^-a/#-a/' "21-no32bit.rules"
-		sed -i 's/^-a/#-a/' "42-injection.rules"
-		sed -i 's/^-a/#-a/' "43-module-load.rules"
-		sed -i 's/^-a/#-a/' "71-networking.rules"
+		sed -i 's/^-a/#-a/' ./21-no32bit.rules
+		sed -i 's/^-a/#-a/' ./42-injection.rules
+		sed -i 's/^-a/#-a/' ./43-module-load.rules
+		sed -i 's/^-a/#-a/' ./71-networking.rules
 	fi
 }
 adjustRules
@@ -319,32 +344,17 @@ function setAuditing() {
 	sed -i 's/#-e 2/-e 2/' "99-finalize.rules"
 
 	# Remove placeholder policy file
-	if [ -e "${AUDIT_RULES_D}"audit.rules ]; then
-		rm "${AUDIT_RULES_D}"audit.rules
+	if [ -e "$AUDIT_RULES_D"/audit.rules ]; then
+		rm "$AUDIT_RULES_D"/audit.rules
 	fi
 
-	RULES[0]="10-base-config.rules"
-	RULES[1]="11-loginuid.rules"
-	RULES[2]="21-no32bit.rules"
-	RULES[3]="30-*.rules"
-	RULES[4]="40-*.rules"
-	RULES[5]="41-containers.rules"
-	RULES[6]="42-injection.rules"
-	RULES[7]="43-module-load.rules"
-	RULES[8]="71-networking.rules"
-	RULES[9]="99-finalize.rules"
-
-	for RULE in ${RULES[@]}; do
-		if [[ -e "${RULE}" ]]; then
-			chmod 440 "${RULE}" && cp "${RULE}" -t "${AUDIT_RULES_D}" 2>/dev/null && rm "${RULE}" && echo -e "${GREEN}[+]${RESET}${BOLD}Installing ${RULE}${RESET}"
-		else
-			echo -e "${RED}"'[!]'"Missing ${RULE}, and cannot locate rule file to install.${RESET}"
-		fi
+	# Install rules
+	for rule in "$SETUPAUDITDIR"/*.rules; do
+		chmod 440 "$rule" && \
+		chown root:root "$rule" && \
+		mv "$rule" -t "$AUDIT_RULES_D"/ && \
+		echo -e "${GREEN}[+]${RESET}${BOLD}Installed $rule${RESET}"
 	done
-
-	# Cleanup
-	cd /tmp && \
-	rm -rf $SETUPAUDITDIR
 
 	# Check for any errors
 	echo ""
