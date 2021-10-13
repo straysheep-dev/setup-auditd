@@ -17,7 +17,7 @@ BOLD="\033[01;01m"     # Highlight
 RESET="\033[00m"       # Normal
 
 AUDIT_DOCS=0
-AUDITD_CONF=/etc/audit/auditd.conf
+AUDIT_CONF=/etc/audit/auditd.conf
 AUDIT_RULES_D=/etc/audit/rules.d
 NUM_LOGS=0
 LOG_SIZE=0
@@ -299,11 +299,11 @@ collectAllRules
 function applySettings() {
 	# Apply the settings chosen by user during setup
 	# /etc/audit/auditd.conf changes:
-	if [ -e "$AUDITD_CONF" ]; then
+	if [ -e "$AUDIT_CONF" ]; then
 		echo ""
-		grep -q -x "log_format = $LOG_FORMAT" "$AUDITD_CONF" || (sed -i 's/^log_format = .*$/log_format = '"$LOG_FORMAT"'/' "$AUDITD_CONF")
-		grep -q -x "num_logs = $NUM_LOGS" "$AUDITD_CONF" || (sed -i 's/^num_logs = .*$/num_logs = '"$NUM_LOGS"'/' "$AUDITD_CONF")
-		grep -q -x "max_log_file = $LOG_SIZE" "$AUDITD_CONF" || (sed -i 's/^max_log_file = .*$/max_log_file = '"$LOG_SIZE"'/' "$AUDITD_CONF")
+		grep -q -x "log_format = $LOG_FORMAT" "$AUDIT_CONF" || (sed -i 's/^log_format = .*$/log_format = '"$LOG_FORMAT"'/' "$AUDIT_CONF")
+		grep -q -x "num_logs = $NUM_LOGS" "$AUDIT_CONF" || (sed -i 's/^num_logs = .*$/num_logs = '"$NUM_LOGS"'/' "$AUDIT_CONF")
+		grep -q -x "max_log_file = $LOG_SIZE" "$AUDIT_CONF" || (sed -i 's/^max_log_file = .*$/max_log_file = '"$LOG_SIZE"'/' "$AUDIT_CONF")
 	else
 		echo -e "${RED}"'[!]'"Missing auditd.conf file.${RESET}"
 		exit 1
