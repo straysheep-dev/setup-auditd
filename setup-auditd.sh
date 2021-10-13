@@ -18,7 +18,7 @@ RESET="\033[00m"       # Normal
 
 AUDIT_DOCS=0
 AUDITD_CONF=/etc/audit/auditd.conf
-AUDIT_RULES_D=/etc/audit/rules.d/
+AUDIT_RULES_D=/etc/audit/rules.d
 NUM_LOGS=0
 LOG_SIZE=0
 LOG_FORMAT=0
@@ -165,10 +165,10 @@ function checkCurrentRules() {
 	if [[ $CONTINUE_SETUP == "n" ]]; then
 		exit 1
 	elif [[ $CONTINUE_SETUP == "y" ]]; then
-		rm "$AUDIT_RULES_D"* 2>/dev/null
+		rm "$AUDIT_RULES_D"/* 2>/dev/null
 	fi
 	# Reset all other rules
-	rm "$AUDIT_RULES_D"* 2>/dev/null
+	rm "$AUDIT_RULES_D"/* 2>/dev/null
 }
 checkCurrentRules
 
@@ -344,15 +344,15 @@ function setAuditing() {
 	sed -i 's/#-e 2/-e 2/' "99-finalize.rules"
 
 	# Remove placeholder policy file
-	if [ -e "$AUDIT_RULES_D"audit.rules ]; then
-		rm "$AUDIT_RULES_D"audit.rules
+	if [ -e "$AUDIT_RULES_D"/audit.rules ]; then
+		rm "$AUDIT_RULES_D"/audit.rules
 	fi
 
 	# Install rules
 	for rule in "$SETUPAUDITDIR"/*.rules; do
 		chmod 440 "$rule" && \
 		chown root:root "$rule" && \
-		mv "$rule" -t "$AUDIT_RULES_D" && \
+		mv "$rule" -t "$AUDIT_RULES_D"/ && \
 		echo -e "${GREEN}[+]${RESET}${BOLD}Installed $rule${RESET}"
 	done
 
