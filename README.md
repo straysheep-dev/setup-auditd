@@ -78,7 +78,7 @@ Workstations and busy servers can log many thousands of keys.
 
 Test rules / keys over time before pushing them to production.
 
-Identify keys that could be used to flood / overwright the logs by an adversary.
+Identify keys that could be used to flood / overwrite the logs by an adversary.
 
 Work broad to narrow in scope.
 
