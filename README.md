@@ -27,77 +27,75 @@ I've tried to combine the two in a fork, which has been adjusted to work with th
 ## Rules: 
 Most of the [default rule files that ship with auditd](https://github.com/linux-audit/audit-userspace/tree/master/rules) are enabled in this setup.
 
-This script was made knowing the previously mentioned custom rule files above have many of these covered, and asks if you'd like to comment out the non-essential rules which will likely be repeated.
+Prompts allow you to enable any one of the 30-* rules ([nispom](https://github.com/linux-audit/audit-userspace/blob/master/rules/30-nispom.rules), [ospp](https://github.com/linux-audit/audit-userspace/blob/master/rules/30-ospp-v42.rules), [pci](https://github.com/linux-audit/audit-userspace/blob/master/rules/30-pci-dss-v31.rules), [stig](https://github.com/linux-audit/audit-userspace/blob/master/rules/30-stig.rules))
 
-If you don't have your own rules, or even have rules but they aren't an extensive custom policy, you can enable any one of the 30-* rules ([nispom](https://github.com/linux-audit/audit-userspace/blob/master/rules/30-nispom.rules), [ospp](https://github.com/linux-audit/audit-userspace/blob/master/rules/30-ospp-v42.rules), [pci](https://github.com/linux-audit/audit-userspace/blob/master/rules/30-pci-dss-v31.rules), [stig](https://github.com/linux-audit/audit-userspace/blob/master/rules/30-stig.rules)) as a base to meet your requirements and have the remaining default rules enabled as well.
-
-This is noisy to watch live, so as always working broad to narrow in scope with this amount of data is an ideal approach
-
-To add your own rules, the [expected method](https://github.com/linux-audit/audit-userspace/blob/master/rules/40-local.rules) is to place them all in file(s) named "40-your-filename.rules"
+Custom rules found in same directory when executing this script, using the naming convention for [local rules](https://github.com/linux-audit/audit-userspace/blob/master/rules/40-local.rules) will be applied.
  
 For example, "40-custom-1.rules", "40-custom-2.rules", "40-workstation.rules" etc.
 
-Rules are still interpretted and work fine if you don't follow this method, but this script expects all local or custom rules to follow this naming convention.
+Rules can always be installed later, and are still interpretted without issue if you don't follow this, but this script expects all local or custom rules to follow this naming convention.
 
 ## Query Examples:
+```bash
+# General report
+sudo aureport -ts <start-time> --summary
 
-* List each rule key and the number of log entries per rule key for the current day:
-```bash
-sudo aureport -ts today -k --summary
-```
-* Print a list of all successful logins by date/time, user, and source ip in the last week:
-```bash
-sudo aureport -ts week-ago -i -l --success
-```
-* Show all commands run with elevated privileges (and their command line switches) since yesterday, in order of time:
-```bash
-sudo ausearch -ts yesterday -i -l -k T1548.003_Sudo_and_Sudo_Caching | grep 'proctitle='
-```
-* Same as above, but printing a list of all unique commands sorted by number of times each command was executed :
-```bash
-sudo ausearch -ts yesterday -i -l -k T1548.003_Sudo_and_Sudo_Caching | grep 'proctitle=' | sed 's/^.*proctitle=/proctitle=/g' | sort | uniq -c | sort -nr
+# Key report
+sudo aureport -ts <start-time> -k --summary
+
+# Login report
+sudo aureport -ts <start-time> -i -l --success
+
+# Searching
+sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle='
+sudo ausearch -ts <start-time> -i -l -sc <syscall> | grep 'proctitle='
+sudo ausearch -ts <start-time> -i -l -x <executable> | grep 'proctitle='
+
+# Unique, by total occurances, greatest to least
+sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle=' | sed 's/^.*proctitle=//g' | sort | uniq -c | sort -nr
+
+# Timing
+## Start time can be general or precise, lists all events from the specified time until now:
+-ts today
+-ts yesterday
+-ts week-ago
+-ts 01/01/2021
+-ts 01/01/2021 08:00:00
+
+## End time takes the same arguments, lists all events up until the specified end time:
+-te today
+-te 12:00:00
+
+## Combine start time and end time for scope
+-ts month-ago -te 01/01/2021 08:00:00
+-ts 01/01/2021 08:00:00 -te yesterday
+-ts 01/01/2021 08:00:00 -te 01/01/2021 18:30:00
 ```
 
 ### Filtering the Noise
 
-Workstations and busy servers will log some keys into the tens of thousands. While noisy, the additional context may prove useful once you're identified what you're looking for. This amount is also not too difficult to parse down so long as a particulary key or entry is not overwhealming, and ultimately **overwriting** the limit of your logging. Always ensure rules are tested so you know how long to expect logs to be available before being overwritten. Also try to identify keys or entries that could be used by an adversary to zero out your logs with useless information.
+Workstations and busy servers can log many thousands of keys.
 
-Goal: Parse down a key with an everage of 10,000+ entries to a list of readable unique results
+Test rules / keys over time before pushing them to production.
 
-T1548.001_Setuid_and_Setgid is a great example, as it's noisy but captures incredibly useful command information
+Identify keys that could be used to flood / overwright the logs by an adversary.
 
-* 1.) list all events of the `T1548.001_Setuid_and_Setgid` key and specifically print the `proctitle=` value to terminal
+Work broad to narrow in scope.
+
 ```bash
-sudo ausearch -ts week-ago -i -l -k T1548.001_Setuid_and_Setgid | grep 'proctitle='
-```
+# Search results with timestamps
+sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle='
+# Search results ordered by occurrances, greatest to least
+sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle=' | sed 's/^.*: proctitle=//g' | sort | uniq -c | sort -nr
+# Review manually and filter out results which are known good
+sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle=' | sed 's/^.*: proctitle=//g' | sort | uniq -c | sort -nr | grep -v 'filter-1' | grep -v 'filter -2' | ...
+# Look for specific threats
+sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle=' | sed 's/^.*: proctitle=//g' | sort | uniq -c | sort -nr | grep '<binary>'
+sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle=' | sed 's/^.*: proctitle=//g' | sort | uniq -c | sort -nr | grep 'curl'
+sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle=' | sed 's/^.*: proctitle=//g' | sort | uniq -c | sort -nr | grep 'nc'
 
-* 2.) remove everything before and up to the `proctitle=` key/value of every single result
-```bash
-sudo ausearch -ts week-ago -i -l -k T1548.001_Setuid_and_Setgid | grep 'proctitle=' | sed 's/^.*: proctitle=/proctitle=/g'
+# Substitute `proctitle=` for other key / value pairs in an auditd event, such as `name=` `key=` `comm=`
 ```
-
-* 3.) we do #2 to prepare for this, sorting all results to uniques only (we used sed to remove date and time for instance, which would make this impossible)
-```bash
-sudo ausearch -ts week-ago -i -l -k T1548.001_Setuid_and_Setgid | grep 'proctitle=' | sed 's/^.*: proctitle=/proctitle=/g' | sort -u
-```
-
-* 4.1) review & manually filter out known good but noisy entries
-```bash
-sudo ausearch -ts week-ago -i -l -k T1548.001_Setuid_and_Setgid | grep 'proctitle=' | sed 's/^.*: proctitle=/proctitle=/g' | sort -u | grep -v "<known-good-entry>"
-```
-From here continue appending to the command to filter known good entries as you discover them:
-```bash
-... | grep -v '<good-entry-2>'| grep -v '<good-entry-3>'| grep -v '<good-entry-4>' ...
-```
-Save this information for next time to already have good filters for your environment.
-
-AND / OR
-
-* 4.2) review & manually filter for a specific threat, for example see all entries where the curl binary was invoked
-```bash
-sudo ausearch -ts week-ago -i -l -k T1548.001_Setuid_and_Setgid | grep 'proctitle=' | sed 's/^.*: proctitle=/proctitle=/g' | sort -u | grep 'curl'
-```
-You can do this not only for `proctitle=` but anything else in an auditd event. `name=` `key=` `comm=` and a date/time range are all good starting points.
 
 ## Resources:
 For complete and downloadable spreadsheets of the matrix id's, see 'ATT&CK in Excel' click 'Learn more'
@@ -117,6 +115,15 @@ Auditd homepage and github:
 <https://people.redhat.com/sgrubb/audit/>
 
 <https://github.com/linux-audit/audit-userspace>
+
+Rule Creation:
+
+RHEL 6 Security Guide:
+<https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/security_guide/sec-defining_audit_rules_and_controls>
+
+RHEL 8 Security Guide:
+<https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/security_hardening/auditing-the-system_security-hardening#using-auditctl-for-defining-and-executing-audit-rules_auditing-the-system>
+
 
 ## To do:
 
