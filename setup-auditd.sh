@@ -63,8 +63,8 @@ function checkOS() {
 		OS="${ID}" # debian, kali, or ubuntu
 		if [[ -e /etc/debian_version ]]; then
 			if [[ ${ID} == "debian" || ${ID} == "raspbian" ]]; then
-				if [[ ${VERSION_ID} -ne 10 ]]; then
-					echo "Your version of Debian (${VERSION_ID}) is not supported. Please use Debian 10 Buster"
+				if [[ ${VERSION_ID} -lt 10 ]]; then
+					echo "Your version of Debian (${VERSION_ID}) is not supported. Please use Debian 10 Buster or later"
 					exit 1
 				fi
 			fi
