@@ -6,6 +6,8 @@
 # https://github.com/bfuzzy1/auditd-attack	#rule-mapping
 # https://github.com/Neo23x0/auditd		#configuration
 # https://attack.mitre.org/			#attack-framework
+# https://github.com/g0tmi1k/os-scripts/blob/master/kali2.sh				#code
+# https://github.com/angristan/wireguard-install/blob/master/wireguard-install.sh	#code
 
 # Vars
 

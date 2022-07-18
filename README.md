@@ -136,10 +136,21 @@ RHEL 8 Security Guide:
 - [ ] Include configuring shipping logs on the network as a prompt option?
 
 - [x] Include options for the different 30-* rulesets:
- * 30-nispom.rules.gz
- * 30-ospp-v42.rules.gz
- * 30-pci-dss-v31.rules.gz
- * 30-stig.rules.gz
+	* 30-nispom.rules.gz
+	* 30-ospp-v42.rules.gz
+	* 30-pci-dss-v31.rules.gz
+	* 30-stig.rules.gz
 
 - [x] fix issue with the ospp rules in recent versions of auditd
- * ospp rule needs to point to [this](https://github.com/linux-audit/audit-userspace/blob/master/rules/30-ospp-v42.rules) file alone
+	* ospp rule needs to point to [this](https://github.com/linux-audit/audit-userspace/blob/master/rules/30-ospp-v42.rules) file alone
+
+
+## Credits & Licenses
+
+This project takes code, ideas, or guidance from the following sources:
+
+- [g0tmi1k, os-scripts](https://github.com/g0tmi1k/os-scripts/blob/master/kali2.sh)
+	* [MIT License](https://github.com/g0tmi1k/os-scripts/blob/master/kali2.sh)
+
+- [angristan, wireguard-install](https://github.com/angristan/wireguard-install/blob/master/wireguard-install.sh)
+	* [MIT License](https://github.com/angristan/wireguard-install/blob/master/LICENSE)
