@@ -367,12 +367,23 @@ function installLaurel() {
 
 	# https://github.com/threathunters-io/laurel/blob/master/INSTALL.md
 	LAUREL_VER='0.5.2'
+	LAUREL_HASH_X86GLIBC='7c97c04ae8f0b0c85a9f14a9fd6b8b8fe7e5c8957942e78bca0adbb24de61976'
 
 	echo -e "${GREEN}[>]${RESET}Installing Laurel v$LAUREL_VER and jq..."
 	# Tail laurel logs and pipe them to jq; sudo tail -f /var/log/laurel/audit.log | jq
 	apt install -y jq
 	curl -sSLO "https://github.com/threathunters-io/laurel/releases/download/v$LAUREL_VER/laurel-v$LAUREL_VER-$(arch)-glibc.tar.gz"
 	tar xzf laurel-v"$LAUREL_VER"-"$(arch)"-glibc.tar.gz
+	# Check the laurel binary hash
+	if [ "$(arch)" == 'x86_64' ]; then
+		LAUREL_HASH="$LAUREL_HASH_X86GLIBC"
+	fi
+	if ! (sha256sum laurel | grep -qx "$LAUREL_HASH  laurel"); then
+		echo -e "${RED}[i]${RESET}Bad checksum on Laurel binary. Quitting"
+		exit 1
+	else
+		echo -e "${GREEN}[sha256sum=OK]${RESET}"
+	fi
 	install -m755 laurel /usr/local/sbin/laurel
 	useradd --system --home-dir /var/log/laurel --create-home _laurel
 	# Copy the configuration files to their correct locations
@@ -383,14 +394,8 @@ function installLaurel() {
 	elif [ -e /etc/audisp/plugins.d ]; then
 		cp laurel.conf /etc/audisp/plugins.d
 	fi
-	# Re-evaluate the auditd configuration
-	# It's possible you'll receive a "Hangup" here and the script will exit. Check "systemctl status auditd" manually.
-	# If laurel is shown running under the auditd service, then reboot and check systemctl again for any errors
-	# If laurel isn't shown running under the auditd service processes, check config.toml and laurel.conf for errors.
-	pkill -HUP auditd
 	systemctl status auditd.service
-	echo -e "${BLUE}[^]${RESET}Check to make sure laurel is running under the auditd service."
-	echo -e "${BLUE}[✓]${RESET}Laurel installed."
+	echo -e "${BLUE}[✓]${RESET}Laurel installed. Reboot and check 'systemctl status auditd'"
 }
 
 # Function sequence
