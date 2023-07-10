@@ -8,6 +8,8 @@
 # https://attack.mitre.org/			#attack-framework
 # https://github.com/g0tmi1k/os-scripts/blob/master/kali2.sh				#code
 # https://github.com/angristan/wireguard-install/blob/master/wireguard-install.sh	#code
+# https://github.com/IppSec/parrot-build/blob/master/roles/configure-logging/tasks/auditd.yml	#automation
+# https://github.com/threathunters-io/laurel							#augmentation
 
 # Vars
 
@@ -35,7 +37,6 @@ function isRoot() {
 		exit 1
 	fi
 }
-isRoot
 
 function checkCwd() {
 	# Needs a better solution
@@ -46,7 +47,6 @@ function checkCwd() {
 		exit 1
 	fi
 }
-checkCwd
 
 #function skeletonFunction() {
 #	echo ""
@@ -90,7 +90,6 @@ function checkOS() {
 		AUDIT_DOCS=/usr/share/audit/sample-rules
 	fi
 }
-checkOS
 
 function checkPackages() {
 	echo -e "${BLUE}[i]${RESET}Checking for auditd binary..."
@@ -106,7 +105,6 @@ function checkPackages() {
 		echo -e "${BLUE}[✓]${RESET}Done."
 	fi
 }
-checkPackages
 
 function checkServices() {
 	if ! [ -e /etc/systemd/system/multi-user.target.wants/auditd.service ]; then
@@ -115,7 +113,6 @@ function checkServices() {
 		systemctl restart auditd.service
 	fi
 }
-checkServices
 
 function makeTemp() {
 	if [ -d /tmp/auditd/ ]; then
@@ -127,9 +124,9 @@ function makeTemp() {
 	SETUPAUDITDIR=/tmp/auditd
 	export SETUPAUDITDIR
 
-	for new_rules in "$(pwd)"/40-*.rules; do
-		if [ -f "$new_rules" ]; then
-			cp "$new_rules" "$SETUPAUDITDIR";
+	for new_files in "$(pwd)"/*.{rules,conf,toml}; do
+		if [ -f "$new_files" ]; then
+			cp "$new_files" "$SETUPAUDITDIR";
 		fi
 	done
 	cd "$SETUPAUDITDIR" || (echo "Failed changing into auditd directory. Quitting." && exit)
@@ -137,7 +134,6 @@ function makeTemp() {
 	echo -e "${BLUE}[i]${RESET}Changing working directory to $SETUPAUDITDIR"
 
 }
-makeTemp
 
 function checkCurrentRules() {
 	# Check for any currently installed rules
@@ -172,7 +168,6 @@ function checkCurrentRules() {
 	# Reset all other rules
 	rm "$AUDIT_RULES_D"/* 2>/dev/null
 }
-checkCurrentRules
 
 function setLogFormat() {
 	echo "======================================================================"
@@ -184,7 +179,6 @@ function setLogFormat() {
 		read -rp "log_format = " -e -i ENRICHED LOG_FORMAT
 	done
 }
-setLogFormat
 
 function setLogSize() {
 	echo "======================================================================"
@@ -196,7 +190,6 @@ function setLogSize() {
 		read -rp "max_log_file (MB) = " -e -i 8 LOG_SIZE
 	done
 }
-setLogSize
 
 function setLogNumber() {
 	echo "======================================================================"
@@ -209,7 +202,6 @@ function setLogNumber() {
 		read -rp "num_logs = " -e -i 8 NUM_LOGS
 	done
 }
-setLogNumber
 
 function setBuffer() {
 	echo "======================================================================"
@@ -221,7 +213,6 @@ function setBuffer() {
 		read -rp "buffer_size (-b) = " -e -i 8192 BUFFER_SIZE
 	done
 }
-setBuffer
 
 function setSiteRules() {
 	echo "======================================================================"
@@ -234,7 +225,6 @@ function setSiteRules() {
 			read -rp "Enter a choice (lowercase): " -e -i none SITE_RULES
 	done
 }
-setSiteRules
 
 function checkLocalRules() {
 	# Check to make sure user's custom/local rules are present if no site rules chosen
@@ -255,7 +245,6 @@ function checkLocalRules() {
 		done
 	fi
 }
-checkLocalRules
 
 function collectAllRules() {
 	# Gather all rule files to cwd, do this to apply modifications to copies rather than those shipped with auditd before installing them.
@@ -296,7 +285,6 @@ function collectAllRules() {
 		fi
 	done
 }
-collectAllRules
 
 function applySettings() {
 	# Apply the settings chosen by user during setup
@@ -315,7 +303,6 @@ function applySettings() {
 		sed -i 's/^-b.*$/-b '"${BUFFER_SIZE}"'/' 10-base-config.rules
 	fi
 }
-applySettings
 
 function adjustRules() {
 	# Make any adjustments to the built in rule files from /usr/share/**rules here
@@ -337,7 +324,6 @@ function adjustRules() {
 		sed -i 's/^-a/#-a/' ./71-networking.rules
 	fi
 }
-adjustRules
 
 function setAuditing() {
 	# Putting everything together
@@ -360,9 +346,9 @@ function setAuditing() {
 
 	# Check for any errors
 	echo ""
-	echo -e "${GREEN}[i]${RESET}Running augenrules --check"
+	echo -e "${GREEN}[>]${RESET}Running augenrules --check"
 	augenrules --check 2>&1
-	echo -e "${GREEN}[i]${RESET}Running augenrules --load to update rules"
+	echo -e "${GREEN}[>]${RESET}Running augenrules --load to update rules"
 	augenrules --load 2>&1
 	echo "======================================================================"
 	echo -e "${BLUE}[^]${RESET}Review any line numbers called out in /etc/audit/audit.rules"
@@ -376,4 +362,69 @@ function setAuditing() {
 	echo ""
 	echo -e "${BLUE}[✓]${RESET}Done. Reminder: auditd rules aren't locked until ${BOLD}after${RESET} next reboot."
 }
+
+function installLaurel() {
+
+	# https://github.com/threathunters-io/laurel/blob/master/INSTALL.md
+	LAUREL_VER='0.5.2'
+
+	echo -e "${GREEN}[>]${RESET}Installing Laurel v$LAUREL_VER and jq..."
+	# Tail laurel logs and pipe them to jq; sudo tail -f /var/log/laurel/audit.log | jq
+	apt install -y jq
+	curl -sSLO "https://github.com/threathunters-io/laurel/releases/download/v$LAUREL_VER/laurel-v$LAUREL_VER-$(arch)-glibc.tar.gz"
+	tar xzf laurel-v"$LAUREL_VER"-"$(arch)"-glibc.tar.gz
+	install -m755 laurel /usr/local/sbin/laurel
+	useradd --system --home-dir /var/log/laurel --create-home _laurel
+	# Copy the configuration files to their correct locations
+	mkdir -p /etc/laurel
+	cp config.toml /etc/laurel
+	if [ -e /etc/audit/plugins.d ]; then
+		cp laurel.conf /etc/audit/plugins.d
+	elif [ -e /etc/audisp/plugins.d ]; then
+		cp laurel.conf /etc/audisp/plugins.d
+	fi
+	# Re-evaluate the auditd configuration
+	# It's possible you'll receive a "Hangup" here and the script will exit. Check "systemctl status auditd" manually.
+	# If laurel is shown running under the auditd service, then reboot and check systemctl again for any errors
+	# If laurel isn't shown running under the auditd service processes, check config.toml and laurel.conf for errors.
+	pkill -HUP auditd
+	systemctl status auditd.service
+	echo -e "${BLUE}[^]${RESET}Check to make sure laurel is running under the auditd service."
+	echo -e "${BLUE}[✓]${RESET}Laurel installed."
+}
+
+# Function sequence
+isRoot
+checkCwd
+checkOS
+checkPackages
+checkServices
+makeTemp
+checkCurrentRules
+setLogFormat
+setLogSize
+setLogNumber
+setBuffer
+setSiteRules
+checkLocalRules
+collectAllRules
+applySettings
+adjustRules
 setAuditing
+
+echo ""
+echo "======================================================================"
+echo "Install Laurel? This processes auditd logs into JSON."
+echo "https://github.com/threathunters-io/laurel"
+echo ""
+until [[ $LAUREL_CHOICE =~ ^(y|n)$ ]]; do
+	read -rp "[y/n]?: " -e -i y LAUREL_CHOICE
+done
+
+if [[ "$LAUREL_CHOICE" == 'y' ]]; then
+	if ! [ -e /usr/local/sbin/laurel ]; then
+		installLaurel
+	elif [ -e /usr/local/sbin/laurel ]; then
+		echo -e "${BLUE}[i]${RESET}Laurel found in path. Exiting."
+	fi
+fi
