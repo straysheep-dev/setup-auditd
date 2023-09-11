@@ -36,37 +36,59 @@ For example, "40-custom-1.rules", "40-custom-2.rules", "40-workstation.rules" et
 Rules can always be installed later, and are still interpretted without issue if you don't follow this, but this script expects all local or custom rules to follow this naming convention.
 
 ## Query Examples:
+
+General report
 ```bash
-# General report
 sudo aureport -ts <start-time> --summary
+```
 
-# Key report
+Key report
+```bash
 sudo aureport -ts <start-time> -k --summary
+```
 
-# Login report
+Login report
+```bash
 sudo aureport -ts <start-time> -i -l --success
+```
 
-# Searching
-sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle='
-sudo ausearch -ts <start-time> -i -l -sc <syscall> | grep 'proctitle='
-sudo ausearch -ts <start-time> -i -l -x <executable> | grep 'proctitle='
+Searching
+```bash
+sudo ausearch -ts <start-time> -i -k <key>
+sudo ausearch -ts <start-time> -i -sc <syscall>
+sudo ausearch -ts <start-time> -i -x <executable>
+```
 
-# Unique, by total occurances, greatest to least
+*The `-x` option works with ELF binaries, AppImages, and other arbitrary executable files that can be downloaded onto a system and aren't part of the PATH.*
+
+Tailing the audit log
+```bash
+sudo su -
+tail -F /var/log/audit/audit.log | ausearch --format interpreted
+```
+
+Unique, by total occurances, greatest to least
+```bash
 sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle=' | sed 's/^.*proctitle=//g' | sort | uniq -c | sort -nr
+```
 
-# Timing
-## Start time can be general or precise, lists all events from the specified time until now:
+Start time can be general or precise, lists all events from the specified time until now:
+```bash
 -ts today
 -ts yesterday
 -ts week-ago
 -ts 01/01/2021
 -ts 01/01/2021 08:00:00
+```
 
-## End time takes the same arguments, lists all events up until the specified end time:
+End time takes the same arguments, lists all events up until the specified end time:
+```bash
 -te today
 -te 12:00:00
+```
 
-## Combine start time and end time for scope
+Combine start time and end time for scope
+```bash
 -ts month-ago -te 01/01/2021 08:00:00
 -ts 01/01/2021 08:00:00 -te yesterday
 -ts 01/01/2021 08:00:00 -te 01/01/2021 18:30:00
@@ -74,28 +96,28 @@ sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle=' | sed 's/^.*pr
 
 ### Filtering the Noise
 
-Workstations and busy servers can log many thousands of keys.
+- Workstations and busy servers can log many thousands of keys.
+- Test rules / keys over time before pushing them to production.
+- Identify keys that could be used to flood / overwrite the logs by an adversary.
+- Work broad to narrow in scope.
 
-Test rules / keys over time before pushing them to production.
-
-Identify keys that could be used to flood / overwrite the logs by an adversary.
-
-Work broad to narrow in scope.
-
+Search results ordered by occurrances, greatest to least
 ```bash
-# Search results with timestamps
-sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle='
-# Search results ordered by occurrances, greatest to least
 sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle=' | sed 's/^.*: proctitle=//g' | sort | uniq -c | sort -nr
-# Review manually and filter out results which are known good
-sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle=' | sed 's/^.*: proctitle=//g' | sort | uniq -c | sort -nr | grep -v 'filter-1' | grep -v 'filter -2' | ...
-# Look for specific threats
-sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle=' | sed 's/^.*: proctitle=//g' | sort | uniq -c | sort -nr | grep '<binary>'
-sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle=' | sed 's/^.*: proctitle=//g' | sort | uniq -c | sort -nr | grep 'curl'
-sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle=' | sed 's/^.*: proctitle=//g' | sort | uniq -c | sort -nr | grep 'nc'
-
-# Substitute `proctitle=` for other key / value pairs in an auditd event, such as `name=` `key=` `comm=`
 ```
+
+Review manually and filter out results which are known good
+```bash
+sudo ausearch -ts <start-time> -i -l -k <key> | grep 'proctitle=' | sed 's/^.*: proctitle=//g' | sort | uniq -c | sort -nr | grep -v 'filter-1' | grep -v 'filter -2' | ...
+```
+
+Trace a process by ppid
+```bash
+sudo ausearch -ts <start-time> -i -l -k <key> -x <executable> # Get the pid of a suspicious process
+sudo ausearch -ts <start-time> -i -l -pp <pid> # Repeat as necessary to trace the process
+```
+
+*Substitute `proctitle=` for other key / value pairs in an auditd event, such as `name=` `key=` `comm=` etc.*
 
 ## Resources:
 For complete and downloadable spreadsheets of the matrix id's, see 'ATT&CK in Excel' click 'Learn more'
